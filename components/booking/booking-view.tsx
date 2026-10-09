@@ -193,10 +193,15 @@ export function BookingView({
 									<HorizontalDayStrip
 										selectedDate={flow.selectedDate}
 										onDateSelect={flow.setSelectedDate}
+										availableDates={flow.availableDates}
 									/>
 
 									<div className="mt-6">
-										{flow.selectedDate ? (
+										{flow.availableDates?.size === 0 ? (
+											<p className="rounded-3xl border border-dashed border-[var(--color-line-strong)] bg-[var(--color-surface)] py-10 text-center text-sm text-[var(--color-ink-muted)]">
+												No open times in the booking window right now. Try another level, teacher or campus.
+											</p>
+										) : flow.selectedDate ? (
 											<TimeSlots
 												slots={flow.slots}
 												selectedSlot={flow.selectedSlot}

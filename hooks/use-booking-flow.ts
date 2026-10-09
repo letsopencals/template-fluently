@@ -167,6 +167,9 @@ export function useBookingFlow(
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [selectedVariantId, globalLocationId]);
 
+	// True while the selected date is the automatic "today" pick (see below).
+	const autoDateRef = useRef(false);
+
 	// Preselect today's date on landing (and after a variant/location reset) so the
 	// slots load automatically without the student having to click a date. Uses the
 	// same local-date string the day strip renders for its "today" card, so the
@@ -176,8 +179,23 @@ export function useBookingFlow(
 		const d = new Date();
 		const todayStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 		availability.setSelectedDate(todayStr);
+		autoDateRef.current = true;
 		// eslint-disable-next-line react-hooks/exhaustive-deps
 	}, [activeVariant, availability.selectedDate]);
+
+	// Once the open days are known, move an auto-picked date that has nothing
+	// open to the first day that does. A date the student (or a deep link) chose
+	// is left alone.
+	useEffect(() => {
+		const dates = availability.availableDates;
+		if (!dates || !autoDateRef.current) return;
+		autoDateRef.current = false;
+		const current = availability.selectedDate;
+		if (current && dates.has(current)) return;
+		const first = [...dates].sort().find((x) => !current || x >= current);
+		if (first) availability.setSelectedDate(first);
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [availability.availableDates, availability.selectedDate]);
 
 	const handleDateSelect = useCallback(
 		(date: string | null) => {
@@ -470,6 +488,7 @@ export function useBookingFlow(
 		setSelectedDate: handleDateSelect,
 		slots: availability.slots,
 		slotsLoading: availability.slotsLoading,
+		availableDates: availability.availableDates,
 		selectedSlot: availability.selectedSlot,
 		handleSlotSelect,
 
