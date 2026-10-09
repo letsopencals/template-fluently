@@ -2,7 +2,7 @@
 
 A production-ready booking website for a language school with campuses and an online classroom. Built with **Next.js 15**, **Tailwind CSS v4**, and the **Opencals Storefront SDK**.
 
-![Fluently — the home page, timetable and booking flow, on desktop and mobile](docs/cover.png)
+![Fluently — the home page, live timetable and student account, on desktop and mobile](docs/cover.png)
 
 Friendly, colorful and playful: a grape-and-sunflower palette, chunky "sticker" buttons, speech-bubble chips and 3D mascots mixed with real photos of teachers and classrooms. Set in **New York** (USD, `America/New_York`) with two campuses (SoHo and Williamsburg) plus a live online classroom, teaching **Spanish, French, German, Italian, Japanese and Mandarin** in group classes, private 1:1 lessons and a free trial. Full storefront included — classes, languages, teachers, timetable, booking, checkout, customer accounts — wired up out of the box. MIT licensed: clone it, rebrand it, ship it.
 
@@ -48,6 +48,10 @@ A big, bubbly hero with a 3D mascot, floating "¡Hola! · Bonjour ! · Ciao!" ch
 - A teacher strip, a video band and a **level-finder quiz** that recommends a level and links to the free trial.
 - How it works, testimonials and the FAQ.
 
+![Homepage hero — a 3D mascot, speech-bubble chips and real teacher portraits](docs/homepage-hero.png)
+
+![This week at Fluently — the live timetable with seats left and language filters](docs/timetable.png)
+
 ### Classes, Languages & Teachers
 - **`/classes`**: the catalog, filtered by language, format and level (shareable URLs: `/classes?language=spanish&format=online&level=A2`). Cards show the level chips, "Up to N students" or 1:1, the duration, campus or online, and the "from" price.
 - **`/languages/[slug]`**: a language page in that language's color, with group classes, private lessons, the trial and that language's teachers.
@@ -62,10 +66,14 @@ A step-by-step flow (when → teacher → extras → questions → details → p
 
 The free trial is a $0 class and books without a card. Paid classes use Stripe Elements, with a pay-at-the-school fallback.
 
+![The booking page — campus, level, date and live seats](docs/booking-page.png)
+
 ### Student Accounts
 Passwordless sign-in by default: students enter their email and receive a 6-digit login code (password sign-in stays available). The account shows upcoming and past lessons, the teacher, campus or online classroom, and a **Join lesson** button for online lessons that switches on 15 minutes before the start. Students can reschedule or cancel within the class policy and browse receipts. The confirmation page exports the booked lessons to their calendar (`.ics`).
 
 One-time email links from Opencals (view/reschedule/cancel, leave feedback, verify email, reset password) all resolve through the `/link/[token]` route, which signs the student in and redirects them to the right place.
+
+![On mobile — the timetable, a student's account and the class catalog](docs/mobile.png)
 
 > **Set your Storefront Base URL.** For emailed links to point back to this app, set **Storefront Base URL** in your Opencals dashboard (Settings → API) to your deployed URL (e.g. `https://your-domain.com`). Opencals builds every customer link as `{storefrontBaseUrl}/link/{token}`.
 
