@@ -2,6 +2,8 @@
 
 A production-ready booking website for a language school with campuses and an online classroom. Built with **Next.js 15**, **Tailwind CSS v4**, and the **Opencals Storefront SDK**.
 
+**[View Live Demo →](https://template-fluently.vercel.app)**
+
 ![Fluently — the home page, live timetable and student account, on desktop and mobile](docs/cover.png)
 
 Friendly, colorful and playful: a grape-and-sunflower palette, chunky "sticker" buttons, speech-bubble chips and 3D mascots mixed with real photos of teachers and classrooms. Set in **New York** (USD, `America/New_York`) with two campuses (SoHo and Williamsburg) plus a live online classroom, teaching **Spanish, French, German, Italian, Japanese and Mandarin** in group classes, private 1:1 lessons and a free trial. Full storefront included — classes, languages, teachers, timetable, booking, checkout, customer accounts — wired up out of the box. MIT licensed: clone it, rebrand it, ship it.
@@ -33,7 +35,7 @@ During deployment, Vercel will ask you to set environment variables:
 | `NEXT_PUBLIC_SITE_URL` | Your public URL (drives metadata, sitemap and JSON-LD) |
 | `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` | *(optional)* Stripe publishable key for payments |
 
-That's it.
+That's it. Once deployed, you'll have the same fully functional booking site as the [live demo](https://template-fluently.vercel.app).
 
 ---
 
