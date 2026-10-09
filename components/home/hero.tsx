@@ -93,7 +93,7 @@ export function Hero({ teachers, primaryHref }: HeroProps) {
 							<span
 								key={text}
 								aria-hidden
-								className={`bubble animate-float absolute px-4 py-2 font-[family-name:var(--font-display)] text-lg font-semibold shadow-[0_4px_0_0_var(--color-ink)] sm:text-xl ${spot.className}`}
+								className={`bubble animate-float absolute whitespace-nowrap px-4 py-2 font-[family-name:var(--font-display)] text-lg font-semibold shadow-[0_4px_0_0_var(--color-ink)] sm:text-xl ${spot.className}`}
 								style={
 									{
 										backgroundColor: spot.bg,

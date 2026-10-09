@@ -164,24 +164,27 @@ body {
 	box-shadow: 0 2px 4px rgba(22, 19, 31, 0.04), 0 28px 60px -24px rgba(22, 19, 31, 0.28);
 }
 
-/* Speech bubble with a tail (bottom-left) */
-.bubble {
-	position: relative;
-	border: 2px solid var(--color-ink);
-	border-radius: 1.25rem;
-}
-.bubble::after {
-	content: '';
-	position: absolute;
-	left: 1.1rem;
-	bottom: -0.55rem;
-	width: 0.9rem;
-	height: 0.9rem;
-	background: inherit;
-	border-right: 2px solid var(--color-ink);
-	border-bottom: 2px solid var(--color-ink);
-	transform: rotate(45deg);
-	border-bottom-right-radius: 0.2rem;
+/* Speech bubble with a tail (bottom-left). Layered so utilities win: the hero
+   bubbles add `absolute`, which an unlayered `position: relative` would override. */
+@layer components {
+	.bubble {
+		position: relative;
+		border: 2px solid var(--color-ink);
+		border-radius: 1.25rem;
+	}
+	.bubble::after {
+		content: '';
+		position: absolute;
+		left: 1.1rem;
+		bottom: -0.55rem;
+		width: 0.9rem;
+		height: 0.9rem;
+		background: inherit;
+		border-right: 2px solid var(--color-ink);
+		border-bottom: 2px solid var(--color-ink);
+		transform: rotate(45deg);
+		border-bottom-right-radius: 0.2rem;
+	}
 }
 
 /* Dotted paper texture for colored bands */
