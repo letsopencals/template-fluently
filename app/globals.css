@@ -1,0 +1,301 @@
+@import 'tailwindcss';
+
+/*
+ * Fluently — friendly, colorful, playful language school.
+ *
+ * Token names are kept from the shared template scaffold so components port
+ * cleanly between templates; the VALUES are the Fluently palette:
+ *   --color-bg*       warm paper page surfaces
+ *   --color-surface*  cards (white → soft lilac steps)
+ *   --color-ink*      text (aubergine-black → muted → dim)
+ *   --color-primary*  grape (CTAs, links, focus)
+ *   --color-tint*     soft grape washes for chips / selected states
+ *   --color-sun*      sunflower (highlights, the playful CTA)
+ *   --color-coral / mint / sky / bubblegum   decorative accents
+ *   --color-brass*    alias of sunflower (scaffold parity: ratings, selected)
+ *   --color-line*     hairlines
+ *
+ * Class colors come from each product's dashboard color via lib/subject-color.ts.
+ * Fonts are loaded with next/font in app/layout.tsx (--font-fredoka, --font-dm-sans).
+ */
+@theme {
+	/* Surfaces */
+	--color-bg: #FBF8F3;
+	--color-bg-deep: #F4EEE4;
+	--color-surface: #FFFFFF;
+	--color-surface-2: #F3F0FF;
+	--color-surface-3: #E6E0FA;
+
+	/* Ink */
+	--color-ink: #16131F;
+	--color-ink-muted: #5C5670;
+	--color-ink-dim: #9A94AB;
+
+	/* Backdrop (bg-charcoal/50 for modal scrims) */
+	--color-charcoal: #16131F;
+
+	/* Grape */
+	--color-primary: #7C5CFF;
+	--color-primary-bright: #9479FF;
+	--color-primary-dark: #5B3DE0;
+
+	--color-tint: #EFEAFF;
+	--color-tint-strong: #DCD2FF;
+
+	/* Accents */
+	--color-sun: #FFC93C;
+	--color-sun-bright: #FFD666;
+	--color-coral: #FF6B4A;
+	--color-mint: #3DD6A3;
+	--color-sky: #5AB8FF;
+	--color-bubblegum: #FF8AC7;
+
+	--color-brass: #FFB800;
+	--color-brass-soft: #FFF3D1;
+	--color-sand: #F6F0E6;
+
+	--color-sage: #3DD6A3;
+	--color-sage-bright: #5FE3B7;
+	--color-leaf: #1FA67A;
+	--color-leaf-deep: #137A59;
+	--color-sage-soft: #D8F7EC;
+
+	--color-line: rgba(22, 19, 31, 0.10);
+	--color-line-strong: rgba(22, 19, 31, 0.22);
+
+	/* Typography */
+	--font-display: var(--font-fredoka), 'Fredoka', ui-rounded, system-ui, sans-serif;
+	--font-body: var(--font-dm-sans), 'DM Sans', system-ui, sans-serif;
+
+	/* Animations */
+	--animate-float: float 6s ease-in-out infinite;
+	--animate-float-slow: float 9s ease-in-out infinite;
+	--animate-wiggle: wiggle 2.4s ease-in-out infinite;
+	--animate-marquee: marquee 40s linear infinite;
+	--animate-pulse-primary: pulse-primary 1.6s ease-in-out infinite;
+}
+
+html {
+	scroll-behavior: smooth;
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	font-family: var(--font-body);
+	color: var(--color-ink);
+	background-color: var(--color-bg);
+}
+
+::selection {
+	background-color: var(--color-sun);
+	color: var(--color-ink);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+	display: none;
+}
+.no-scrollbar {
+	-ms-overflow-style: none;
+	scrollbar-width: none;
+}
+
+/* Rounded, chunky display type */
+.heading-display {
+	font-family: var(--font-display);
+	font-weight: 600;
+	line-height: 1.02;
+	letter-spacing: -0.015em;
+}
+
+.heading-display-italic {
+	font-family: var(--font-display);
+	font-weight: 500;
+	line-height: 1.02;
+}
+
+/* Small label above headings */
+.eyebrow {
+	font-family: var(--font-display);
+	font-size: 0.8rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	color: var(--color-ink-muted);
+}
+
+.tabular {
+	font-variant-numeric: tabular-nums;
+}
+
+/* Hand-drawn marker highlight behind a word */
+.marker {
+	position: relative;
+	white-space: nowrap;
+	z-index: 0;
+}
+.marker::before {
+	content: '';
+	position: absolute;
+	left: -0.08em;
+	right: -0.08em;
+	bottom: 0.06em;
+	height: 0.42em;
+	border-radius: 0.3em;
+	background: var(--color-sun);
+	transform: rotate(-1.5deg);
+	z-index: -1;
+}
+
+/* Sticker: ink outline + hard shadow (stat tiles, cards, chips) */
+.sticker {
+	border: 2px solid var(--color-ink);
+	box-shadow: 0 5px 0 0 var(--color-ink);
+}
+.sticker-sm {
+	border: 2px solid var(--color-ink);
+	box-shadow: 0 3px 0 0 var(--color-ink);
+}
+
+.card-shadow {
+	box-shadow: 0 1px 2px rgba(22, 19, 31, 0.04), 0 14px 34px -14px rgba(22, 19, 31, 0.18);
+}
+.card-shadow-lg {
+	box-shadow: 0 2px 4px rgba(22, 19, 31, 0.04), 0 28px 60px -24px rgba(22, 19, 31, 0.28);
+}
+
+/* Speech bubble with a tail (bottom-left) */
+.bubble {
+	position: relative;
+	border: 2px solid var(--color-ink);
+	border-radius: 1.25rem;
+}
+.bubble::after {
+	content: '';
+	position: absolute;
+	left: 1.1rem;
+	bottom: -0.55rem;
+	width: 0.9rem;
+	height: 0.9rem;
+	background: inherit;
+	border-right: 2px solid var(--color-ink);
+	border-bottom: 2px solid var(--color-ink);
+	transform: rotate(45deg);
+	border-bottom-right-radius: 0.2rem;
+}
+
+/* Dotted paper texture for colored bands */
+.dots {
+	background-image: radial-gradient(rgba(22, 19, 31, 0.12) 1.2px, transparent 1.2px);
+	background-size: 18px 18px;
+}
+
+.image-placeholder {
+	background-image:
+		radial-gradient(60% 60% at 30% 30%, rgba(255, 201, 60, 0.35) 0%, rgba(255, 201, 60, 0) 60%),
+		linear-gradient(135deg, var(--color-surface-2) 0%, var(--color-surface-3) 100%);
+}
+
+.hr-accent {
+	height: 3px;
+	border-radius: 3px;
+	background-color: var(--color-primary);
+	border: none;
+}
+
+.hairline {
+	height: 1px;
+	background: var(--color-line);
+}
+
+.leader-line {
+	flex: 1;
+	margin: 0 1rem;
+	border-bottom: 2px dotted var(--color-line-strong);
+	transform: translateY(-4px);
+}
+
+.link-underline {
+	position: relative;
+	display: inline-block;
+}
+.link-underline::after {
+	content: '';
+	position: absolute;
+	bottom: -2px;
+	left: 0;
+	width: 0;
+	height: 2px;
+	border-radius: 2px;
+	background-color: currentColor;
+	transition: width 0.3s ease;
+}
+.link-underline:hover::after {
+	width: 100%;
+}
+
+.glass {
+	background: rgba(255, 255, 255, 0.7);
+	backdrop-filter: blur(18px) saturate(160%);
+	-webkit-backdrop-filter: blur(18px) saturate(160%);
+	border: 1px solid rgba(255, 255, 255, 0.8);
+}
+
+.glass-strong {
+	background: rgba(255, 255, 255, 0.88);
+	backdrop-filter: blur(24px) saturate(180%);
+	-webkit-backdrop-filter: blur(24px) saturate(180%);
+	border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.glass-nav {
+	background: rgba(251, 248, 243, 0.82);
+	backdrop-filter: blur(18px) saturate(170%);
+	-webkit-backdrop-filter: blur(18px) saturate(170%);
+	border: 2px solid var(--color-ink);
+}
+
+/* Pill chip for tags */
+.chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 0.35rem;
+	border-radius: 9999px;
+	padding: 0.3rem 0.75rem;
+	font-size: 0.75rem;
+	font-weight: 600;
+	background: var(--color-tint);
+	color: var(--color-primary-dark);
+}
+
+@keyframes float {
+	0%, 100% { transform: translateY(0) rotate(var(--r, 0deg)); }
+	50% { transform: translateY(-12px) rotate(var(--r, 0deg)); }
+}
+
+@keyframes wiggle {
+	0%, 100% { transform: rotate(-3deg); }
+	50% { transform: rotate(3deg); }
+}
+
+@keyframes marquee {
+	from { transform: translateX(0); }
+	to { transform: translateX(-50%); }
+}
+
+@keyframes pulse-primary {
+	0%, 100% { box-shadow: 0 0 0 0 rgba(124, 92, 255, 0.45); }
+	50% { box-shadow: 0 0 0 8px rgba(124, 92, 255, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	.animate-float,
+	.animate-float-slow,
+	.animate-wiggle,
+	.animate-marquee {
+		animation: none !important;
+	}
+	html {
+		scroll-behavior: auto;
+	}
+}
