@@ -12,7 +12,7 @@ export default function AccountLayout({ children }: { children: React.ReactNode 
 		<section className="min-h-screen bg-[var(--color-bg)] pt-32 pb-24 lg:pt-44 lg:pb-32">
 			<div className="mx-auto max-w-[1400px] px-6 lg:px-10">
 				<div className="grid gap-8 lg:grid-cols-12 lg:gap-16">
-					<aside className="lg:col-span-3">
+					<aside className="min-w-0 lg:col-span-3">
 						<AccountNav />
 					</aside>
 					<Reveal className="min-w-0 lg:col-span-9">
