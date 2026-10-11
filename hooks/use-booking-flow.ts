@@ -358,10 +358,6 @@ export function useBookingFlow(
 					await signIn('checkout-token', {
 						accessToken: data.auth.accessToken,
 						refreshToken: data.auth.refreshToken,
-						customerId: data.customer?.id ?? '',
-						customerEmail: data.customer?.email ?? email,
-						customerFirstName: data.customer?.firstName ?? firstName,
-						customerLastName: data.customer?.lastName ?? lastName,
 						redirect: false,
 					});
 				}
@@ -372,7 +368,7 @@ export function useBookingFlow(
 				setSubmitting(false);
 			}
 		},
-		[cartHeaders, email, firstName, lastName, clearCart, router],
+		[cartHeaders, clearCart, router],
 	);
 
 	const handleSelectProvider = useCallback(

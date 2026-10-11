@@ -110,6 +110,14 @@ export function ThankYouView() {
 									<p className="text-sm text-[var(--color-ink-muted)]">
 										{status === 'authenticated' ? 'We could not load the booking details here.' : 'Sign in to see your booking details here.'} The confirmation email has everything you need.
 									</p>
+									{status !== 'authenticated' ? (
+										<Link
+											href={`/auth/sign-in?callbackUrl=${encodeURIComponent(orderId ? `/account/orders/${orderId}` : '/account/orders')}`}
+											className={buttonClasses('primary', 'md', { className: 'mt-6' })}
+										>
+											Sign in
+										</Link>
+									) : null}
 								</div>
 							)}
 						</div>
