@@ -1,12 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { AppointmentDetailResponse, CurrentAvailabilitySlot } from '@opencals/storefront-sdk';
 import { useDateFormatter } from '@/hooks/use-date-formatter';
 import moment from 'moment-timezone';
 import { Button } from '@/components/ui/button';
 import { Notice } from '@/components/auth/auth-feedback';
 import { Modal, chipClass, readError } from './modal';
+import { onSessionExpired } from '@/lib/session-expired';
 
 const DAYS_AHEAD = 30;
 
@@ -27,6 +28,8 @@ export function SlotRescheduleModal({
 	const [slots, setSlots] = useState<CurrentAvailabilitySlot[]>([]);
 	const [selectedSlot, setSelectedSlot] = useState<CurrentAvailabilitySlot | null>(null);
 	const [loadingSlots, setLoadingSlots] = useState(false);
+	const [slotsError, setSlotsError] = useState('');
+	const latestDate = useRef('');
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState('');
 
@@ -40,27 +43,35 @@ export function SlotRescheduleModal({
 
 	const fetchSlots = useCallback(
 		async (date: string) => {
+			latestDate.current = date;
 			setLoadingSlots(true);
+			setSlotsError('');
 			setSlots([]);
 			setSelectedSlot(null);
 			try {
-				const params = new URLSearchParams({ productId, date, timezone });
+				// The lesson's own slot must not block itself. No `duration`: lessons are fixed-length
+				// and the API rejects it on products without custom durations.
+				const params = new URLSearchParams({ productId, date, timezone, excludeAppointmentId: appointment.id });
 				if (appointment.staffMemberId) params.set('staffMemberId', appointment.staffMemberId);
 				if (appointment.locationId) params.set('locationId', appointment.locationId);
 
 				const res = await fetch(`/api/availability?${params}`);
+				// A slower response for a date the customer already left must not overwrite the new one.
+				if (latestDate.current !== date) return;
 				if (res.ok) {
 					const data = await res.json();
 					const availableSlots: CurrentAvailabilitySlot[] = Array.isArray(data) ? data : (data?.slots ?? []);
 					setSlots(availableSlots);
+				} else {
+					setSlotsError(await readError(res, 'We could not load times for this date.'));
 				}
 			} catch {
-				// silently fail
+				if (latestDate.current === date) setSlotsError('We could not load times for this date.');
 			} finally {
-				setLoadingSlots(false);
+				if (latestDate.current === date) setLoadingSlots(false);
 			}
 		},
-		[productId, timezone, appointment.staffMemberId, appointment.locationId],
+		[productId, timezone, appointment.id, appointment.staffMemberId, appointment.locationId],
 	);
 
 	useEffect(() => {
@@ -87,6 +98,7 @@ export function SlotRescheduleModal({
 					},
 				}),
 			});
+			if (res.status === 401) return onSessionExpired();
 			if (res.ok) {
 				onRescheduled();
 			} else {
@@ -133,6 +145,8 @@ export function SlotRescheduleModal({
 								<div key={i} className="h-10 animate-pulse rounded-full bg-[var(--color-surface-2)]" />
 							))}
 						</div>
+					) : slotsError ? (
+						<Notice tone="error">{slotsError}</Notice>
 					) : slots.length === 0 ? (
 						<p className="text-sm text-[var(--color-ink-muted)]">No available times on this date.</p>
 					) : (

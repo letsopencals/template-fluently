@@ -16,6 +16,7 @@ import { CancelModal } from '@/components/account/appointment-detail/cancel-moda
 import { SlotRescheduleModal } from '@/components/account/appointment-detail/slot-reschedule-modal';
 import { getChangePolicy } from '@/components/account/appointment-detail/policy';
 import { siteConfig } from '@/lib/site-config';
+import { onSessionExpired } from '@/lib/session-expired';
 
 type ModalState = 'none' | 'cancel' | 'reschedule';
 
@@ -30,6 +31,7 @@ export default function AppointmentDetailPage() {
 	const fetchAppointment = useCallback(async () => {
 		try {
 			const res = await fetch(`/api/account/appointments/${appointmentId}`);
+			if (res.status === 401) return onSessionExpired();
 			if (res.ok) setAppointment(await res.json());
 		} catch {
 			// silently fail

@@ -10,6 +10,8 @@ export async function GET(request: NextRequest) {
 	const timezone = searchParams.get('timezone') ?? undefined;
 	const staffMemberId = searchParams.get('staffMemberId') ?? undefined;
 	const locationId = searchParams.get('locationId') ?? undefined;
+	// Rescheduling: stops the lesson's own current slot from blocking itself.
+	const excludeAppointmentId = searchParams.get('excludeAppointmentId') ?? undefined;
 
 	if (!productId || !date) {
 		return NextResponse.json({ error: 'productId and date are required' }, { status: 400 });
@@ -18,7 +20,8 @@ export async function GET(request: NextRequest) {
 	try {
 		const { data } = await ProductService.getCurrentAvailabilities({
 			path: { productId },
-			query: { date, timezone, staffMemberId, locationId },
+			query: { date, timezone, staffMemberId, locationId, excludeAppointmentId },
+			throwOnError: true,
 		});
 		return NextResponse.json(data);
 	} catch (err) {
