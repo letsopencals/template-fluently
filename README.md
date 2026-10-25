@@ -222,6 +222,7 @@ Fluently is one of the open-source booking templates built on the Opencals Store
 - **[NOIR Drive](https://github.com/letsopencals/template-noir)** — a luxury car-rental template with multi-day booking. [Live demo](https://template-noir.vercel.app)
 - **[Bali Villa Rentals](https://github.com/letsopencals/template-bali-villas)** — a villa-rental template (Bali, demo brand Lumbung Sidemen) with nightly stays and fixed check-in and check-out. [Live demo](https://template-bali-villas.vercel.app)
 - **[Tensile](https://github.com/letsopencals/template-reformer)** — a reformer Pilates studio template (Berlin) with a multi-studio class timetable, beds left, privates and workshops. [Live demo](https://template-reformer.vercel.app)
+- **[Alba Dental](https://github.com/letsopencals/template-alba)** — a dental group template (London) with five studios, a Smile Check on a tooth chart, a chair-time booking planner and a cut-paper kids site. [Live demo](https://template-alba.vercel.app)
 
 See all templates and the Storefront API at **[opencals.com/developers](https://opencals.com/developers)**.
 
