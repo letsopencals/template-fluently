@@ -16,7 +16,8 @@ import type {
 	StartCheckout,
 	SubmitCheckout,
 } from '@opencals/storefront-sdk';
-import type { CheckoutApiErrorBody } from '@/lib/api-error-handler';
+import type { ApiErrorBody, CheckoutApiErrorBody } from '@/lib/api-error-handler';
+import { mapFieldErrors } from '@/lib/field-errors';
 import { saveHandoff } from '@/lib/payment-handoff';
 import type { BookingStep } from '@/lib/booking-constants';
 import { useCart } from '@/contexts/cart-context';
@@ -73,6 +74,10 @@ async function postCheckout<T>(url: string, headers: Record<string, string>, bod
 	}
 }
 
+/** The details step's fields, which the API's `customer.*` validation errors map onto. */
+const DETAILS_FIELDS = ['email', 'firstName', 'lastName'] as const;
+export type DetailsField = (typeof DETAILS_FIELDS)[number];
+
 export function useBookingFlow(
 	slug: string,
 	initialProduct: ProductListItemResponse | null = null,
@@ -114,7 +119,7 @@ export function useBookingFlow(
 	const [committedCartId, setCommittedCartId] = useState<string | null>(null);
 	const [submitting, setSubmitting] = useState(false);
 	const [error, setError] = useState<string | null>(null);
-	const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+	const [fieldErrors, setFieldErrors] = useState<Partial<Record<DetailsField, string>>>({});
 
 	const finalStaffId = selectedStaffId ?? confirmedStaffId;
 	const isExpired = timeRemaining !== null && timeRemaining <= 0;
@@ -349,8 +354,11 @@ export function useBookingFlow(
 			});
 
 			if (!res.ok) {
-				const data = await res.json().catch(() => null);
-				if (data?.errors) setFieldErrors(data.errors);
+				const data = (await res.json().catch(() => null)) as ApiErrorBody | null;
+				// Field errors go under their field; the banner is only for what doesn't belong to one.
+				const { mapped, unmapped } = mapFieldErrors(data?.fieldErrors, DETAILS_FIELDS);
+				setFieldErrors(mapped);
+				if (unmapped.length === 0 && Object.keys(mapped).length > 0) return;
 				throw new Error(data?.error || 'Could not save your details');
 			}
 
@@ -482,6 +490,22 @@ export function useBookingFlow(
 		[cartHeaders, customerId, handleSubmitCheckout, providers, restartAfterExpiry, clearCart, router],
 	);
 
+	// Editing a field clears the API's error under it.
+	const editField = useCallback((field: DetailsField, set: (v: string) => void) => {
+		return (value: string) => {
+			set(value);
+			setFieldErrors((prev) => {
+				if (!prev[field]) return prev;
+				const next = { ...prev };
+				delete next[field];
+				return next;
+			});
+		};
+	}, []);
+	const changeEmail = useMemo(() => editField('email', setEmail), [editField]);
+	const changeFirstName = useMemo(() => editField('firstName', setFirstName), [editField]);
+	const changeLastName = useMemo(() => editField('lastName', setLastName), [editField]);
+
 	const goToStep = useCallback((target: BookingStep) => {
 		setStep(target);
 	}, []);
@@ -573,11 +597,11 @@ export function useBookingFlow(
 
 		// Customer
 		email,
-		setEmail,
+		setEmail: changeEmail,
 		firstName,
-		setFirstName,
+		setFirstName: changeFirstName,
 		lastName,
-		setLastName,
+		setLastName: changeLastName,
 		customerId,
 
 		// Questions

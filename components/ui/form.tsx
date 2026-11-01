@@ -1,8 +1,10 @@
 'use client';
 
 import {
+	cloneElement,
 	createContext,
 	forwardRef,
+	isValidElement,
 	useContext,
 	useId,
 	type HTMLAttributes,
@@ -105,9 +107,18 @@ interface FormControlProps {
 
 const FormControl = forwardRef<HTMLDivElement, FormControlProps>(
 	({ children, className }, ref) => {
+		const { error, formItemId, formMessageId } = useFormField();
+		// Give the control the id its label points at, and tie it to its error message.
+		const control = isValidElement<Record<string, unknown>>(children)
+			? cloneElement(children, {
+					id: formItemId,
+					'aria-invalid': error ? true : undefined,
+					'aria-describedby': error ? formMessageId : undefined,
+				})
+			: children;
 		return (
 			<div ref={ref} className={className}>
-				{children}
+				{control}
 			</div>
 		);
 	},

@@ -1,7 +1,9 @@
 'use client';
 
+import { useEffect, useId } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import type { DetailsField } from '@/hooks/use-booking-flow';
 
 interface DetailsStepProps {
 	email: string;
@@ -11,7 +13,7 @@ interface DetailsStepProps {
 	onChangeEmail: (v: string) => void;
 	onChangeFirstName: (v: string) => void;
 	onChangeLastName: (v: string) => void;
-	fieldErrors: Record<string, string[]>;
+	fieldErrors: Partial<Record<DetailsField, string>>;
 	submitting: boolean;
 	canSubmit: boolean;
 	onSubmit: () => void;
@@ -30,6 +32,18 @@ export function DetailsStep({
 	canSubmit,
 	onSubmit,
 }: DetailsStepProps) {
+	const id = useId();
+	const fieldId = (field: DetailsField) => `${id}-${field}`;
+	const aria = (field: DetailsField) =>
+		fieldErrors[field] ? { 'aria-invalid': true, 'aria-describedby': `${fieldId(field)}-error` } : {};
+
+	// Take the student to the first field the API rejected.
+	useEffect(() => {
+		const first = (['email', 'firstName', 'lastName'] as const).find((f) => fieldErrors[f]);
+		if (first) document.getElementById(fieldId(first))?.focus();
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [fieldErrors]);
+
 	return (
 		<form
 			onSubmit={(e) => {
@@ -48,8 +62,10 @@ export function DetailsStep({
 					</p>
 				</div>
 				<div className="space-y-4 px-6 py-6">
-					<Field label="Email" required error={fieldErrors.email?.[0]}>
+					<Field label="Email" required id={fieldId('email')} error={fieldErrors.email}>
 						<Input
+							id={fieldId('email')}
+							{...aria('email')}
 							type="email"
 							required
 							value={email}
@@ -58,16 +74,20 @@ export function DetailsStep({
 						/>
 					</Field>
 					<div className="grid gap-4 sm:grid-cols-2">
-						<Field label="First Name" error={fieldErrors.firstName?.[0]}>
+						<Field label="First Name" id={fieldId('firstName')} error={fieldErrors.firstName}>
 							<Input
+								id={fieldId('firstName')}
+								{...aria('firstName')}
 								type="text"
 								value={firstName}
 								onChange={(e) => onChangeFirstName(e.target.value)}
 								placeholder="Jane"
 							/>
 						</Field>
-						<Field label="Last Name" error={fieldErrors.lastName?.[0]}>
+						<Field label="Last Name" id={fieldId('lastName')} error={fieldErrors.lastName}>
 							<Input
+								id={fieldId('lastName')}
+								{...aria('lastName')}
 								type="text"
 								value={lastName}
 								onChange={(e) => onChangeLastName(e.target.value)}
@@ -92,23 +112,30 @@ export function DetailsStep({
 
 function Field({
 	label,
+	id,
 	required,
 	error,
 	children,
 }: {
 	label: string;
+	/** The control's id: labels it, and `<id>-error` is the error's id for `aria-describedby`. */
+	id: string;
 	required?: boolean;
 	error?: string;
 	children: React.ReactNode;
 }) {
 	return (
 		<div>
-			<label className="mb-1 block text-sm font-semibold text-[var(--color-ink)]">
+			<label htmlFor={id} className="mb-1 block text-sm font-semibold text-[var(--color-ink)]">
 				{label}
 				{required && <span className="ml-1 text-[var(--color-primary)]">*</span>}
 			</label>
 			{children}
-			{error && <p className="mt-1 text-xs text-red-600">{error}</p>}
+			{error ? (
+				<p id={`${id}-error`} className="mt-1 text-xs text-red-600">
+					{error}
+				</p>
+			) : null}
 		</div>
 	);
 }
