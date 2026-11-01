@@ -7,7 +7,7 @@ import { useSearchParams } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { motion } from 'framer-motion';
 import { useReducedMotion } from '@/components/motion/use-reduced-motion';
-import type { OrderDetailAppointment, OrderDetailResponse } from '@opencals/storefront-sdk';
+import type { OrderDetailAppointment, OrderDetailResponse, PaymentProviderName } from '@opencals/storefront-sdk';
 import { fetcher } from '@/lib/fetcher';
 import { formatPrice } from '@/lib/format';
 import { siteConfig } from '@/lib/site-config';
@@ -46,7 +46,7 @@ function Row({ label, value, accent = false }: { label: string; value: string; a
 }
 
 /** The Status row: every payment status the API sends, in words, and how the rest is paid when this tab knows. */
-function paymentLabel(order: OrderDetailResponse, provider: string | null): string {
+function paymentLabel(order: OrderDetailResponse, provider: PaymentProviderName | null): string {
 	if (order.paymentStatus === 'voided') return 'Cancelled — not charged';
 	if (order.isFullyPaid || order.paymentStatus === 'paid') return 'Paid';
 	if ((order.total ?? 0) <= 0) return 'Nothing to pay';

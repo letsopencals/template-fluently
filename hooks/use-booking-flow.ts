@@ -5,17 +5,18 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useSession } from 'next-auth/react';
 import type {
+	CheckoutErrorCode,
 	CheckoutResponse,
 	CheckoutStartResponse,
 	CurrentAvailabilitySlot,
 	CustomerProviderCatalogItem,
-	ExistingOrderCustomer,
-	NewOrderCustomer,
+	ExistingAppointmentCustomer,
+	NewAppointmentCustomer,
 	ProductListItemResponse,
 	StartCheckout,
 	SubmitCheckout,
 } from '@opencals/storefront-sdk';
-import type { ApiErrorBody } from '@/lib/api-error-handler';
+import type { CheckoutApiErrorBody } from '@/lib/api-error-handler';
 import { saveHandoff } from '@/lib/payment-handoff';
 import type { BookingStep } from '@/lib/booking-constants';
 import { useCart } from '@/contexts/cart-context';
@@ -42,21 +43,21 @@ export interface BookingPreselect {
 class CheckoutError extends Error {
 	constructor(
 		message: string,
-		readonly code?: string,
+		readonly code?: CheckoutErrorCode,
 		readonly orderId?: string,
 	) {
 		super(message);
 	}
 }
 
-const CHECKOUT_MESSAGES: Record<string, string> = {
+const CHECKOUT_MESSAGES: Partial<Record<CheckoutErrorCode, string>> = {
 	CART_EXPIRED: 'Your hold on that time ran out and someone else took the spot. Pick another time and you’re back in.',
 	CHECKOUT_IN_PROGRESS: 'We’re still confirming your booking. Give it a moment, then try again.',
 	PAYMENT_NOT_AUTHORIZED: 'Your card wasn’t authorised, so nothing was booked or charged. Check the details or try another card.',
 };
 
 async function checkoutError(res: Response, fallback: string): Promise<CheckoutError> {
-	const data = (await res.json().catch(() => null)) as ApiErrorBody | null;
+	const data = (await res.json().catch(() => null)) as CheckoutApiErrorBody | null;
 	const code = data?.code;
 	return new CheckoutError((code && CHECKOUT_MESSAGES[code]) || data?.error || fallback, code, data?.orderId);
 }
@@ -296,7 +297,7 @@ export function useBookingFlow(
 		setStep('details');
 	}, []);
 
-	const customerPayload = useMemo((): ExistingOrderCustomer | NewOrderCustomer => {
+	const customerPayload = useMemo((): ExistingAppointmentCustomer | NewAppointmentCustomer => {
 		if (customerId) {
 			return { kind: 'existing', customerId };
 		}

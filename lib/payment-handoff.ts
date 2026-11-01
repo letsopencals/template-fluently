@@ -1,4 +1,4 @@
-import type { PaymentInstructions } from '@opencals/storefront-sdk';
+import type { PaymentInstructions, PaymentProviderName } from '@opencals/storefront-sdk';
 
 /**
  * What checkout knows about paying that the order itself doesn't: the method the student picked and, for bank
@@ -6,7 +6,7 @@ import type { PaymentInstructions } from '@opencals/storefront-sdk';
  * /thank-you can show them (and still show them after a reload in the same tab). Another device gets the email.
  */
 export interface PaymentHandoff {
-	provider: string | null;
+	provider: PaymentProviderName | null;
 	/** Order number, for the bank transfer reference. */
 	orderName?: string | null;
 	instructions: PaymentInstructions | null;

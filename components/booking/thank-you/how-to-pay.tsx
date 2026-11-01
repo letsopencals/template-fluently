@@ -1,13 +1,13 @@
 'use client';
 
-import type { PaymentInstructions } from '@opencals/storefront-sdk';
+import type { PaymentInstructions, PaymentProviderName } from '@opencals/storefront-sdk';
 import { useDateFormatter } from '@/hooks/use-date-formatter';
 import { formatPrice } from '@/lib/format';
 import { buttonClasses } from '@/components/ui/button';
 
 interface HowToPayProps {
 	/** Method picked at checkout, when this tab knows it. */
-	provider: string | null;
+	provider: PaymentProviderName | null;
 	instructions: PaymentInstructions | null;
 	/** Still to pay, major units; null when the order couldn't be read (the student isn't signed in). */
 	due: number | null;
