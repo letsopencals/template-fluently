@@ -1,4 +1,4 @@
-import type { OrderDetailAppointment } from '@opencals/storefront-sdk';
+import type { OrderDetailAppointment, StorefrontAppointmentPendingReason } from '@opencals/storefront-sdk';
 import { getProductImage } from '@/lib/format';
 import { getBookingMeta, type BookingMeta } from '@/components/account/booking-meta';
 
@@ -10,6 +10,17 @@ export interface ConfirmedBooking extends BookingMeta {
 	from: string;
 	to: string;
 	status: string;
+	/** Why it waits ('awaiting_payment' / 'awaiting_approval'), or null when it's confirmed. */
+	awaiting: StorefrontAppointmentPendingReason | null;
+}
+
+/**
+ * Only a pending lesson WITH a reason waits. Right after checkout a lesson at a school that confirms everything is
+ * briefly pending with no reason while a background job confirms it: that one counts as booked.
+ */
+export function awaitingOf(a: { status?: string | null; pendingReason?: StorefrontAppointmentPendingReason | null }): StorefrontAppointmentPendingReason | null {
+	if ((a.status ?? '').toLowerCase() !== 'pending') return null;
+	return a.pendingReason === 'awaiting_payment' || a.pendingReason === 'awaiting_approval' ? a.pendingReason : null;
 }
 
 export function toConfirmedBooking(a: OrderDetailAppointment): ConfirmedBooking {
@@ -20,5 +31,6 @@ export function toConfirmedBooking(a: OrderDetailAppointment): ConfirmedBooking 
 		from: a.from,
 		to: a.to,
 		status: (a.status ?? '').toLowerCase(),
+		awaiting: awaitingOf(a),
 	};
 }

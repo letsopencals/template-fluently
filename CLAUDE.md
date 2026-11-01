@@ -141,6 +141,14 @@ applied once by `use-booking-flow` (`BookingPreselect`) and validated against
 the active variant, so bad params are ignored rather than breaking the flow.
 Timetable rows, class cards' variant chips and "Book with {teacher}" all use this.
 
+### Checkout and confirmation
+`use-booking-flow` routes on the provider's `checkoutMode` after `checkout/start`: `internal` shows the Stripe
+form, `redirect` leaves, `manual` (cash, bank transfer, invoice) and `none` submit straight away. 409
+`CHECKOUT_IN_PROGRESS` is retried, `CART_EXPIRED` sends the student back to pick a time, `CART_ALREADY_CHECKED_OUT`
+re-submits to get the order, 402 `PAYMENT_NOT_AUTHORIZED` keeps the card form. `/thank-you` says "Booking received"
+only when a lesson is `pending` with a `pendingReason`; the bank details / invoice link that only submit returns are
+kept per order in sessionStorage (`lib/payment-handoff.ts`) and shown by `thank-you/how-to-pay.tsx`.
+
 ### Online lessons
 The Online location's `link` is the classroom URL. `JoinLessonButton` shows it
 on online appointments (account and thank-you pages) and enables it from

@@ -13,7 +13,24 @@ interface PaymentStepProps {
 	onSelectProvider: (providerName: string) => void;
 	onStripeSuccess: (paymentIntentId: string) => void;
 	onStripeError: (message: string) => void;
-	onSubmitCash: () => void;
+	/** Confirm a booking paid outside the site (cash, bank transfer, invoice) or with nothing to pay. */
+	onConfirm: () => void;
+}
+
+/** Heading and line for a method that takes no card here. Never promises "pay at the school" for a transfer. */
+function manualCopy(name: string | null, displayName: string | undefined): { title: string; body: string } {
+	switch (name) {
+		case 'no_payment_required':
+			return { title: 'No payment needed', body: 'Your lesson is fully covered. Confirm to finish booking.' };
+		case 'cash':
+			return { title: 'Pay at the school', body: 'Pay at the front desk when you arrive for your lesson.' };
+		case 'bank_transfer':
+			return { title: 'Pay by bank transfer', body: 'Next you’ll see the bank details to pay into. We email them to you too.' };
+		case 'stripe_invoice':
+			return { title: 'Pay by invoice', body: 'We email you an invoice to pay online, by card or bank.' };
+		default:
+			return { title: displayName ?? 'Pay later', body: 'We’ll confirm your booking and email you how to pay.' };
+	}
 }
 
 export function PaymentStep({
@@ -25,14 +42,17 @@ export function PaymentStep({
 	onSelectProvider,
 	onStripeSuccess,
 	onStripeError,
-	onSubmitCash,
+	onConfirm,
 }: PaymentStepProps) {
-	// Branch on the RESPONSE provider for the fallback: when nothing is collectible the backend
-	// overrides the requested provider with "no payment required" (cast: the pinned SDK's union
-	// predates it). clientSecret is null in that case, so showStripe/showCash won't match.
-	const showNoPayment = (paymentData?.provider as string) === 'no_payment_required';
-	const showStripe = !showNoPayment && provider === 'stripe' && paymentData?.clientSecret;
-	const showCash = !showNoPayment && provider === 'cash' && paymentData;
+	// Branch on the method's checkout mode, not its name. When nothing is collectible the backend
+	// answers start with "no payment required" whatever was picked, so the response wins.
+	const chosen = providers.find((p) => p.name === provider);
+	const noPayment = (paymentData?.provider as string) === 'no_payment_required';
+	const mode = noPayment ? 'none' : chosen?.checkoutMode;
+	const showStripe = mode === 'internal' && paymentData?.clientSecret;
+	// Manual methods confirm straight after start; this panel shows while that runs and offers a retry if it failed.
+	const showManual = !!paymentData && (mode === 'manual' || mode === 'none');
+	const manual = manualCopy(noPayment ? 'no_payment_required' : (provider ?? null), chosen?.displayName);
 
 	return (
 		<div className="space-y-6">
@@ -111,37 +131,19 @@ export function PaymentStep({
 				/>
 			)}
 
-			{showNoPayment && (
+			{showManual ? (
 				<div className="overflow-hidden rounded-3xl border border-[var(--color-line)] bg-[var(--color-surface)] card-shadow">
 					<div className="border-b border-[var(--color-line)] px-6 py-5">
-						<p className="text-base font-semibold text-[var(--color-ink)]">No payment required</p>
+						<p className="text-base font-semibold text-[var(--color-ink)]">{manual.title}</p>
 					</div>
 					<div className="space-y-5 px-6 py-6 text-center">
-						<p className="text-sm text-[var(--color-ink-muted)]">
-							No payment is required — your booking is fully covered. Confirm to complete it.
-						</p>
-						<Button variant="primary" size="lg" fullWidth onClick={onSubmitCash} disabled={submitting || isExpired}>
+						<p className="text-sm text-[var(--color-ink-muted)]">{manual.body}</p>
+						<Button variant="primary" size="lg" fullWidth onClick={onConfirm} disabled={submitting || isExpired}>
 							{submitting ? 'Confirming…' : 'Confirm booking'}
 						</Button>
 					</div>
 				</div>
-			)}
-
-			{showCash && (
-				<div className="overflow-hidden rounded-3xl border border-[var(--color-line)] bg-[var(--color-surface)] card-shadow">
-					<div className="border-b border-[var(--color-line)] px-6 py-5">
-						<p className="text-base font-semibold text-[var(--color-ink)]">Pay at the school</p>
-					</div>
-					<div className="space-y-5 px-6 py-6 text-center">
-						<p className="text-sm text-[var(--color-ink-muted)]">
-							Your booking is confirmed. Please pay when you arrive.
-						</p>
-						<Button variant="primary" size="lg" fullWidth onClick={onSubmitCash} disabled={submitting || isExpired}>
-							{submitting ? 'Confirming…' : 'Confirm booking'}
-						</Button>
-					</div>
-				</div>
-			)}
+			) : null}
 		</div>
 	);
 }

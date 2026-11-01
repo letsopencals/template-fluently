@@ -15,7 +15,7 @@ import { JoinLessonButton } from './join-lesson-button';
 export interface AppointmentRowProps {
 	appointment: Pick<
 		AppointmentListItemResponse,
-		'id' | 'from' | 'to' | 'status' | 'numberOfAttendees' | 'staffMember' | 'product' | 'location'
+		'id' | 'from' | 'to' | 'status' | 'pendingReason' | 'numberOfAttendees' | 'staffMember' | 'product' | 'location'
 	>;
 	/** Tighter row for the overview page. */
 	compact?: boolean;
@@ -81,7 +81,7 @@ export const AppointmentRow = memo(function AppointmentRow({ appointment: appt, 
 			</Link>
 
 			<div className="col-span-2 flex items-center gap-3 sm:col-span-1 sm:flex-col sm:items-end">
-				<StatusBadge kind="appointment" status={appt.status} />
+				<StatusBadge kind="appointment" status={appt.status} pendingReason={appt.pendingReason} />
 				{canJoin ? <JoinLessonButton joinUrl={meta.joinUrl!} from={appt.from} to={appt.to} size="sm" /> : null}
 			</div>
 		</div>

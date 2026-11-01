@@ -23,7 +23,20 @@ const PAYMENT: Record<string, { label: string; tone: Tone }> = {
 	paid: { label: 'Paid', tone: 'positive' },
 	unpaid: { label: 'Unpaid', tone: 'warning' },
 	'partially-paid': { label: 'Part paid', tone: 'warning' },
+	voided: { label: 'Cancelled — not charged', tone: 'neutral' },
 };
+
+/** Why a pending lesson waits. A pending lesson with no reason is being confirmed right now: show it as booked. */
+const AWAITING: Record<string, { label: string; tone: Tone }> = {
+	awaiting_payment: { label: 'Awaiting payment', tone: 'warning' },
+	awaiting_approval: { label: 'Awaiting confirmation', tone: 'warning' },
+};
+
+/** "partially-refunded" → "Partially refunded", for a status this map doesn't know yet. */
+function humanize(status: string): string {
+	const text = status.replace(/[-_]+/g, ' ').trim();
+	return text ? text[0]!.toUpperCase() + text.slice(1) : 'Unknown';
+}
 
 const FULFILLMENT: Record<string, { label: string; tone: Tone }> = {
 	fulfilled: { label: 'Fulfilled', tone: 'positive' },
@@ -44,13 +57,19 @@ const MAPS = { appointment: APPOINTMENT, payment: PAYMENT, fulfillment: FULFILLM
 export const StatusBadge = memo(function StatusBadge({
 	kind,
 	status,
+	pendingReason,
 	className,
 }: {
 	kind: keyof typeof MAPS;
 	status: string;
+	/** Appointments only: `pendingReason` from the API. */
+	pendingReason?: string | null;
 	className?: string;
 }) {
-	const c = MAPS[kind][status] ?? { label: status, tone: 'neutral' as Tone };
+	const pending = kind === 'appointment' && status === 'pending';
+	const c =
+		(pending ? (pendingReason ? AWAITING[pendingReason] : APPOINTMENT.scheduled) : MAPS[kind][status]) ??
+		{ label: humanize(status), tone: 'neutral' as Tone };
 	return (
 		<span
 			className={clsx(

@@ -5,10 +5,13 @@ import { useRouter } from 'next/navigation';
 import { signIn } from 'next-auth/react';
 import { useSession } from 'next-auth/react';
 import type {
+	CheckoutResponse,
 	CheckoutStartResponse,
 	CurrentAvailabilitySlot,
 	ProductListItemResponse,
 } from '@opencals/storefront-sdk';
+import type { ApiErrorBody } from '@/lib/api-error-handler';
+import { saveHandoff } from '@/lib/payment-handoff';
 import type { BookingStep } from '@/lib/booking-constants';
 import { useCart } from '@/contexts/cart-context';
 import { useLocation } from '@/contexts/location-context';
@@ -28,6 +31,40 @@ export interface BookingPreselect {
 	date?: string | null;
 	staffId?: string | null;
 	locationId?: string | null;
+}
+
+/** A failed checkout call, with the API's machine-readable `code` (and `orderId` for an already placed cart). */
+class CheckoutError extends Error {
+	constructor(
+		message: string,
+		readonly code?: string,
+		readonly orderId?: string,
+	) {
+		super(message);
+	}
+}
+
+const CHECKOUT_MESSAGES: Record<string, string> = {
+	CART_EXPIRED: 'Your hold on that time ran out and someone else took the spot. Pick another time and you’re back in.',
+	CHECKOUT_IN_PROGRESS: 'We’re still confirming your booking. Give it a moment, then try again.',
+	PAYMENT_NOT_AUTHORIZED: 'Your card wasn’t authorised, so nothing was booked or charged. Check the details or try another card.',
+};
+
+async function checkoutError(res: Response, fallback: string): Promise<CheckoutError> {
+	const data = (await res.json().catch(() => null)) as ApiErrorBody | null;
+	const code = data?.code;
+	return new CheckoutError((code && CHECKOUT_MESSAGES[code]) || data?.error || fallback, code, data?.orderId);
+}
+
+/** POST to /api/checkout/*. A 409 CHECKOUT_IN_PROGRESS (double click, second tab) is retried a few times. */
+async function postCheckout<T>(url: string, headers: Record<string, string>, body: unknown, fallback: string): Promise<T> {
+	for (let attempt = 0; ; attempt++) {
+		const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) });
+		if (res.ok) return (await res.json()) as T;
+		const err = await checkoutError(res, fallback);
+		if (err.code !== 'CHECKOUT_IN_PROGRESS' || attempt >= 3) throw err;
+		await new Promise((r) => setTimeout(r, 1500 * (attempt + 1)));
+	}
 }
 
 export function useBookingFlow(
@@ -336,24 +373,38 @@ export function useBookingFlow(
 		setCart,
 	]);
 
+	// The hold ran out and a time was taken: start over from the time picker with a fresh cart.
+	const restartAfterExpiry = useCallback(() => {
+		clearCart();
+		setCommitted(false);
+		setCommittedCartId(null);
+		setProvider(null);
+		setPaymentData(null);
+		availability.resetSlot();
+		setStep('when');
+	}, [clearCart, availability]);
+
 	const handleSubmitCheckout = useCallback(
-		async (stripePaymentIntentId?: string) => {
+		async (stripePaymentIntentId?: string, providerName?: string): Promise<boolean> => {
 			setSubmitting(true);
 			setError(null);
 			try {
-				const res = await fetch('/api/checkout/submit', {
-					method: 'POST',
-					headers: cartHeaders(),
-					body: JSON.stringify({
+				const data = await postCheckout<CheckoutResponse>(
+					'/api/checkout/submit',
+					cartHeaders(),
+					{
 						appointmentsSettings: { markAsScheduled: true },
 						...(stripePaymentIntentId ? { stripePaymentIntentId } : {}),
-					}),
-				});
-				if (!res.ok) {
-					const data = await res.json().catch(() => null);
-					throw new Error(data?.error || 'Checkout failed');
+					},
+					'Checkout failed',
+				);
+				if (data.order?.id) {
+					saveHandoff(data.order.id, {
+						provider: data.paymentInstructions?.provider ?? providerName ?? provider,
+						orderName: data.order.name ?? null,
+						instructions: data.paymentInstructions ?? null,
+					});
 				}
-				const data = await res.json();
 				if (data.auth?.accessToken) {
 					await signIn('checkout-token', {
 						accessToken: data.auth.accessToken,
@@ -363,12 +414,16 @@ export function useBookingFlow(
 				}
 				clearCart();
 				router.push(`/thank-you?orderId=${data.order?.id ?? ''}`);
+				return true;
 			} catch (err: unknown) {
+				if (err instanceof CheckoutError && err.code === 'CART_EXPIRED') restartAfterExpiry();
+				// PAYMENT_NOT_AUTHORIZED leaves the card form up, so the student can pay again.
 				setError(err instanceof Error ? err.message : 'Checkout failed');
 				setSubmitting(false);
+				return false;
 			}
 		},
-		[cartHeaders, clearCart, router],
+		[cartHeaders, clearCart, router, provider, restartAfterExpiry],
 	);
 
 	const handleSelectProvider = useCallback(
@@ -381,36 +436,43 @@ export function useBookingFlow(
 				if (customerId) {
 					startPayload.customer = { kind: 'existing', customerId };
 				}
-				const res = await fetch('/api/checkout/start', {
-					method: 'POST',
-					headers: cartHeaders(),
-					body: JSON.stringify(startPayload),
-				});
-				if (!res.ok) {
-					const data = await res.json().catch(() => null);
-					throw new Error(data?.error || 'Could not start checkout');
-				}
-				const data: CheckoutStartResponse = await res.json();
+				const data = await postCheckout<CheckoutStartResponse>('/api/checkout/start', cartHeaders(), startPayload, 'Could not start checkout');
 				setPaymentData(data);
 
-				// Immediate confirm for the no-collection cases: cash pays on arrival; no_payment_required
-				// (the amount-aware fallback) is fully covered — either way there's no card step.
-				if (providerName === 'cash' || (data.provider as string) === 'no_payment_required') {
-					await handleSubmitCheckout();
+				// Route on the method's checkout mode, not its name: `internal` shows the card form, `redirect` leaves
+				// for the provider, `manual` (cash, bank transfer, invoice) and `none` (nothing to pay) confirm right away.
+				const mode =
+					(data.provider as string) === 'no_payment_required'
+						? 'none'
+						: (providers.find((p) => p.name === providerName)?.checkoutMode ?? (data.clientSecret ? 'internal' : 'manual'));
+				if (mode === 'manual' || mode === 'none') {
+					await handleSubmitCheckout(undefined, providerName);
 					return;
 				}
-				if (data.redirectUrl) {
+				if (mode === 'redirect') {
+					if (!data.redirectUrl) throw new Error('We couldn’t reach the payment page. Try again, or pick another way to pay.');
 					window.location.href = data.redirectUrl;
 					return;
 				}
+				if (!data.clientSecret) throw new Error('The card form didn’t load. Try again, or pick another way to pay.');
+				setSubmitting(false);
 			} catch (err: unknown) {
+				if (err instanceof CheckoutError && err.code === 'CART_ALREADY_CHECKED_OUT') {
+					// This cart is already a booking: submitting again returns it (and signs the student in). If that
+					// fails too, open the booking's confirmation directly.
+					if (!(await handleSubmitCheckout(undefined, providerName)) && err.orderId) {
+						clearCart();
+						router.push(`/thank-you?orderId=${encodeURIComponent(err.orderId)}`);
+					}
+					return;
+				}
+				if (err instanceof CheckoutError && err.code === 'CART_EXPIRED') restartAfterExpiry();
 				setError(err instanceof Error ? err.message : 'Could not start checkout');
 				setProvider(null);
-			} finally {
 				setSubmitting(false);
 			}
 		},
-		[cartHeaders, customerId, handleSubmitCheckout],
+		[cartHeaders, customerId, handleSubmitCheckout, providers, restartAfterExpiry, clearCart, router],
 	);
 
 	const goToStep = useCallback((target: BookingStep) => {

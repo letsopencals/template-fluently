@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import useSWR from 'swr';
 import { useSearchParams } from 'next/navigation';
@@ -16,6 +16,8 @@ import { Reveal } from '@/components/motion/reveal';
 import { buttonClasses } from '@/components/ui/button';
 import { BookingCard } from './booking-card';
 import { toConfirmedBooking } from './confirmed-booking';
+import { HowToPay } from './how-to-pay';
+import { readHandoff, type PaymentHandoff } from '@/lib/payment-handoff';
 import { icsHref } from './ics';
 
 const CHECK_INITIAL = { pathLength: 0 };
@@ -41,6 +43,24 @@ function Row({ label, value, accent = false }: { label: string; value: string; a
 			<span className={accent ? 'tabular text-lg font-bold text-[var(--color-primary)]' : 'tabular font-medium text-[var(--color-ink)]'}>{value}</span>
 		</div>
 	);
+}
+
+/** The Status row: every payment status the API sends, in words, and how the rest is paid when this tab knows. */
+function paymentLabel(order: OrderDetailResponse, provider: string | null): string {
+	if (order.paymentStatus === 'voided') return 'Cancelled — not charged';
+	if (order.isFullyPaid || order.paymentStatus === 'paid') return 'Paid';
+	if ((order.total ?? 0) <= 0) return 'Nothing to pay';
+	if (order.paymentStatus === 'partially-paid') return 'Part paid';
+	switch (provider) {
+		case 'cash':
+			return 'Pay at the school';
+		case 'bank_transfer':
+			return 'Bank transfer';
+		case 'stripe_invoice':
+			return 'Invoice';
+		default:
+			return 'To pay';
+	}
 }
 
 function OrderSkeleton() {
@@ -71,6 +91,17 @@ export function ThankYouView() {
 	const currency = order?.paymentCurrencyCode ?? siteConfig.currency;
 	const calendar = useMemo(() => (bookings.length > 0 ? icsHref(bookings, order?.name ?? '') : null), [bookings, order?.name]);
 	const email = order?.customerEmail ?? order?.customer?.email ?? null;
+	// Saved by checkout in this tab: the method and the bank details / invoice link that only submit returns.
+	const [handoff, setHandoff] = useState<PaymentHandoff | null>(null);
+	useEffect(() => setHandoff(readHandoff(orderId)), [orderId]);
+	const provider = handoff?.provider ?? order?.transactions?.[0]?.provider ?? null;
+	// Payment first (it decides the rest), then the school's approval. Pending with no reason = being confirmed.
+	const awaiting = bookings.some((b) => b.awaiting === 'awaiting_payment')
+		? 'awaiting_payment'
+		: bookings.some((b) => b.awaiting === 'awaiting_approval')
+			? 'awaiting_approval'
+			: null;
+	const due = order && order.paymentStatus !== 'voided' && !order.isFullyPaid ? (order.dueToPay ?? order.total ?? 0) : 0;
 
 	return (
 		<section className="pt-32 pb-20 lg:pt-40 lg:pb-28">
@@ -83,11 +114,24 @@ export function ThankYouView() {
 				</Reveal>
 				<Reveal delay={0.14}>
 					<h1 className="heading-display mt-4 text-5xl text-[var(--color-ink)] sm:text-7xl">
-						<span className="marker">¡Genial!</span> You&rsquo;re booked.
+						{awaiting ? (
+							<>
+								<span className="marker">¡Casi!</span> Booking received.
+							</>
+						) : (
+							<>
+								<span className="marker">¡Genial!</span> You&rsquo;re booked.
+							</>
+						)}
 					</h1>
 				</Reveal>
 				<Reveal delay={0.2}>
 					<p className="mt-6 max-w-xl text-base leading-relaxed text-[var(--color-ink-muted)]">
+						{awaiting === 'awaiting_payment'
+							? 'Your spot is held until the payment arrives. Then it’s confirmed. '
+							: awaiting === 'awaiting_approval'
+								? 'The school still has to confirm your spot. We’ll email you as soon as they do. '
+								: null}
 						{email ? (
 							<>
 								A confirmation is on its way to <span className="font-semibold text-[var(--color-ink)]">{email}</span>.
@@ -130,9 +174,20 @@ export function ThankYouView() {
 										<Row label="Subtotal" value={formatPrice(order.subtotal ?? 0, currency)} />
 										{(order.totalTax ?? 0) > 0 ? <Row label={order.taxesIncluded ? 'Tax (included)' : 'Tax'} value={formatPrice(order.totalTax, currency)} /> : null}
 										<Row label="Total" value={formatPrice(order.total ?? 0, currency)} accent />
-										<Row label="Status" value={order.isFullyPaid ? 'Paid' : order.paymentStatus === 'partially-paid' ? 'Part paid' : 'Pay later'} />
+										<Row label="Status" value={paymentLabel(order, provider)} />
 									</div>
 								</div>
+							) : null}
+
+							{order || handoff?.instructions ? (
+								<HowToPay
+									provider={provider}
+									instructions={handoff?.instructions ?? null}
+									due={order ? due : null}
+									currency={currency}
+									orderName={order?.name ?? handoff?.orderName ?? ''}
+									dueAt={order?.paymentDueAt ?? null}
+								/>
 							) : null}
 
 							{calendar ? (

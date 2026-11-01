@@ -16,7 +16,11 @@ interface Step {
 function stepsFor(b: ConfirmedBooking): Step[] {
 	const teacher = b.teacherFirstName ?? 'your teacher';
 	return [
-		{ label: 'You’re in!', detail: 'Your confirmation is on its way by email.' },
+		b.awaiting === 'awaiting_payment'
+			? { label: 'Pay to lock it in', detail: 'Your spot is held until the payment arrives. Then we confirm it by email.' }
+			: b.awaiting === 'awaiting_approval'
+				? { label: 'The school confirms it', detail: 'We check the class and email you as soon as your spot is confirmed.' }
+				: { label: 'You’re in!', detail: 'Your confirmation is on its way by email.' },
 		b.isOnline
 			? {
 					label: 'Join from anywhere',

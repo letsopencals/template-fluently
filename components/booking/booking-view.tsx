@@ -294,7 +294,7 @@ export function BookingView({
 										onSelectProvider={flow.handleSelectProvider}
 										onStripeSuccess={(piId) => flow.handleSubmitCheckout(piId)}
 										onStripeError={(msg) => flow.setError(msg)}
-										onSubmitCash={() => flow.handleSubmitCheckout()}
+										onConfirm={() => void flow.handleSubmitCheckout(undefined, flow.provider ?? undefined)}
 									/>
 								</motion.div>
 							) : null}
