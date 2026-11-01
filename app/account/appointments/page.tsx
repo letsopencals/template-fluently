@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import type { AppointmentListItemResponse, CollectionMeta } from '@opencals/storefront-sdk';
+import type { AppointmentListItemResponse, AppointmentListResponse, CollectionMeta } from '@opencals/storefront-sdk';
 import { buttonClasses } from '@/components/ui/button';
 import { AccountHeading, EmptyState, Pagination, SkeletonBlock } from '@/components/account/account-ui';
 import { AppointmentRow } from '@/components/account/appointment-row';
@@ -20,7 +20,7 @@ export default function AppointmentsPage() {
 			const res = await fetch(`/api/account/appointments?take=10&page=${p}`);
 			if (res.status === 401) return onSessionExpired();
 			if (res.ok) {
-				const data: { data: AppointmentListItemResponse[]; meta: CollectionMeta } = await res.json();
+				const data: AppointmentListResponse = await res.json();
 				setAppointments(data.data ?? []);
 				setMeta(data.meta ?? null);
 			}

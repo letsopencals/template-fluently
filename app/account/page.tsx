@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import useSWR from 'swr';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
-import type { AppointmentListItemResponse, OrderListItemResponse, CollectionMeta } from '@opencals/storefront-sdk';
+import type { AppointmentListResponse, OrderListResponse } from '@opencals/storefront-sdk';
 import { fetcher } from '@/lib/fetcher';
 import { formatPrice } from '@/lib/format';
 import { useDateFormatter } from '@/hooks/use-date-formatter';
@@ -13,9 +13,6 @@ import { AccountHeading, EmptyState, Panel, PanelLink, SkeletonBlock, StatTile }
 import { AppointmentRow } from '@/components/account/appointment-row';
 import { StatusBadge } from '@/components/account/status-badge';
 import { ComingSoonCard } from '@/components/account/coming-soon-card';
-
-type OrderWithId = OrderListItemResponse & { id: string };
-type Page<T> = { data: T[]; meta: CollectionMeta };
 
 const SWR_OPTS = { revalidateOnFocus: false } as const;
 const UPCOMING_URL = '/api/account/appointments?take=100&status=scheduled&status=pending&orderBy=from&order=ASC';
@@ -26,14 +23,14 @@ export default function AccountDashboard() {
 
 	// Counts come from `meta.itemCount` of 1-item pages; the upcoming list is
 	// filtered to lessons that haven't ended yet.
-	const { data: all } = useSWR<Page<AppointmentListItemResponse>>('/api/account/appointments?take=1', fetcher, SWR_OPTS);
-	const { data: done } = useSWR<Page<AppointmentListItemResponse>>(
+	const { data: all } = useSWR<AppointmentListResponse>('/api/account/appointments?take=1', fetcher, SWR_OPTS);
+	const { data: done } = useSWR<AppointmentListResponse>(
 		'/api/account/appointments?take=1&status=completed',
 		fetcher,
 		SWR_OPTS,
 	);
-	const { data: booked, isLoading } = useSWR<Page<AppointmentListItemResponse>>(UPCOMING_URL, fetcher, SWR_OPTS);
-	const { data: orders } = useSWR<Page<OrderWithId>>('/api/account/orders?take=3', fetcher, SWR_OPTS);
+	const { data: booked, isLoading } = useSWR<AppointmentListResponse>(UPCOMING_URL, fetcher, SWR_OPTS);
+	const { data: orders } = useSWR<OrderListResponse>('/api/account/orders?take=3', fetcher, SWR_OPTS);
 
 	const upcoming = useMemo(() => {
 		const now = Date.now();

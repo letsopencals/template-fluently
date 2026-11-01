@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import type { OrderListItemResponse, CollectionMeta, OrderListLineItem } from '@opencals/storefront-sdk';
+import type { OrderListItemResponse, OrderListResponse, CollectionMeta, OrderListLineItem } from '@opencals/storefront-sdk';
 import { formatPrice } from '@/lib/format';
 import { useDateFormatter } from '@/hooks/use-date-formatter';
 import { buttonClasses } from '@/components/ui/button';
@@ -10,11 +10,8 @@ import { AccountHeading, EmptyState, Pagination, SkeletonBlock } from '@/compone
 import { StatusBadge } from '@/components/account/status-badge';
 import { onSessionExpired } from '@/lib/session-expired';
 
-// The SDK OrderListItemResponse type is missing `id` but it's returned by the API
-type OrderWithId = OrderListItemResponse & { id: string };
-
 export default function OrdersPage() {
-	const [orders, setOrders] = useState<OrderWithId[]>([]);
+	const [orders, setOrders] = useState<OrderListItemResponse[]>([]);
 	const [meta, setMeta] = useState<CollectionMeta | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [page, setPage] = useState(1);
@@ -27,7 +24,7 @@ export default function OrdersPage() {
 			const res = await fetch(`/api/account/orders?take=10&page=${p}`);
 			if (res.status === 401) return onSessionExpired();
 			if (res.ok) {
-				const data: { data: OrderWithId[]; meta: CollectionMeta } = await res.json();
+				const data: OrderListResponse = await res.json();
 				setOrders(data.data ?? []);
 				setMeta(data.meta ?? null);
 			}

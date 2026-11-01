@@ -18,7 +18,7 @@ export interface ConfirmedBooking extends BookingMeta {
  * Only a pending lesson WITH a reason waits. Right after checkout a lesson at a school that confirms everything is
  * briefly pending with no reason while a background job confirms it: that one counts as booked.
  */
-export function awaitingOf(a: { status?: string | null; pendingReason?: StorefrontAppointmentPendingReason | null }): StorefrontAppointmentPendingReason | null {
+export function awaitingOf(a: Pick<OrderDetailAppointment, 'status' | 'pendingReason'>): StorefrontAppointmentPendingReason | null {
 	if ((a.status ?? '').toLowerCase() !== 'pending') return null;
 	return a.pendingReason === 'awaiting_payment' || a.pendingReason === 'awaiting_approval' ? a.pendingReason : null;
 }

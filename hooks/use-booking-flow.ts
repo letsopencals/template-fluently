@@ -8,7 +8,12 @@ import type {
 	CheckoutResponse,
 	CheckoutStartResponse,
 	CurrentAvailabilitySlot,
+	CustomerProviderCatalogItem,
+	ExistingOrderCustomer,
+	NewOrderCustomer,
 	ProductListItemResponse,
+	StartCheckout,
+	SubmitCheckout,
 } from '@opencals/storefront-sdk';
 import type { ApiErrorBody } from '@/lib/api-error-handler';
 import { saveHandoff } from '@/lib/payment-handoff';
@@ -99,7 +104,7 @@ export function useBookingFlow(
 	const [answers, setAnswers] = useState<Record<string, string>>({});
 
 	// Payment
-	const [provider, setProvider] = useState<string | null>(null);
+	const [provider, setProvider] = useState<CustomerProviderCatalogItem['name'] | null>(null);
 	const [paymentData, setPaymentData] = useState<CheckoutStartResponse | null>(null);
 
 	// Flow
@@ -291,12 +296,12 @@ export function useBookingFlow(
 		setStep('details');
 	}, []);
 
-	const customerPayload = useMemo(() => {
+	const customerPayload = useMemo((): ExistingOrderCustomer | NewOrderCustomer => {
 		if (customerId) {
-			return { kind: 'existing' as const, customerId };
+			return { kind: 'existing', customerId };
 		}
 		return {
-			kind: 'new' as const,
+			kind: 'new',
 			email,
 			firstName: firstName || undefined,
 			lastName: lastName || undefined,
@@ -385,17 +390,18 @@ export function useBookingFlow(
 	}, [clearCart, availability]);
 
 	const handleSubmitCheckout = useCallback(
-		async (stripePaymentIntentId?: string, providerName?: string): Promise<boolean> => {
+		async (stripePaymentIntentId?: string, providerName?: CustomerProviderCatalogItem['name']): Promise<boolean> => {
 			setSubmitting(true);
 			setError(null);
 			try {
+				const submitPayload: SubmitCheckout = {
+					appointmentsSettings: { markAsScheduled: true },
+					...(stripePaymentIntentId ? { stripePaymentIntentId } : {}),
+				};
 				const data = await postCheckout<CheckoutResponse>(
 					'/api/checkout/submit',
 					cartHeaders(),
-					{
-						appointmentsSettings: { markAsScheduled: true },
-						...(stripePaymentIntentId ? { stripePaymentIntentId } : {}),
-					},
+					submitPayload,
 					'Checkout failed',
 				);
 				if (data.order?.id) {
@@ -427,12 +433,12 @@ export function useBookingFlow(
 	);
 
 	const handleSelectProvider = useCallback(
-		async (providerName: string) => {
+		async (providerName: CustomerProviderCatalogItem['name']) => {
 			setProvider(providerName);
 			setError(null);
 			setSubmitting(true);
 			try {
-				const startPayload: Record<string, unknown> = { provider: providerName };
+				const startPayload: StartCheckout = { provider: providerName };
 				if (customerId) {
 					startPayload.customer = { kind: 'existing', customerId };
 				}
@@ -441,8 +447,8 @@ export function useBookingFlow(
 
 				// Route on the method's checkout mode, not its name: `internal` shows the card form, `redirect` leaves
 				// for the provider, `manual` (cash, bank transfer, invoice) and `none` (nothing to pay) confirm right away.
-				const mode =
-					(data.provider as string) === 'no_payment_required'
+				const mode: CustomerProviderCatalogItem['checkoutMode'] =
+					data.provider === 'no_payment_required'
 						? 'none'
 						: (providers.find((p) => p.name === providerName)?.checkoutMode ?? (data.clientSecret ? 'internal' : 'manual'));
 				if (mode === 'manual' || mode === 'none') {

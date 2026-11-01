@@ -20,8 +20,7 @@ function getInitials(staff: ProductListVariantStaffMember): string {
 }
 
 function getImageUrl(staff: ProductListVariantStaffMember): string | null {
-	const img = staff.image as { url?: string } | undefined;
-	return img?.url ?? null;
+	return staff.image?.url ?? null;
 }
 
 export function StaffAvatars({ staffMembers, maxVisible = 4, size = 'md', onClick }: StaffAvatarsProps) {

@@ -1,27 +1,24 @@
 import '@/lib/opencals';
-import { AppointmentService, CartService } from '@opencals/storefront-sdk';
+import {
+	AppointmentService,
+	CartService,
+	type AppointmentDateRangeSlot,
+	type CheckoutQuestionAnswer,
+	type CreateAppointment,
+	type CreateAppointmentAddOn,
+	type ExistingOrderCustomer,
+	type NewOrderCustomer,
+} from '@opencals/storefront-sdk';
 import { getAccessToken } from '@/lib/api-auth';
 import { NextRequest, NextResponse } from 'next/server';
 import { handleApiError } from '@/lib/api-error-handler';
 import { publicPayload } from '@/lib/public-payload';
 
-interface AddOnSelection {
-	addOnId: string;
-	quantity?: number;
-}
-
-interface QuestionAnswerInput {
-	questionId: string;
-	question: string;
-	answer: string;
-}
-
-interface CustomerInput {
-	kind: 'new' | 'existing';
-	customerId?: string;
-	email?: string;
-	firstName?: string;
-	lastName?: string;
+/** The booking form sends the checkout customer shape (`kind` picks it); appointments take it without `kind`. */
+function toAppointmentCustomer(customer: ExistingOrderCustomer | NewOrderCustomer): CreateAppointment['customer'] {
+	if (customer.kind === 'existing' && customer.customerId) return { customerId: customer.customerId };
+	const email = 'email' in customer ? customer.email : '';
+	return { externalId: email ?? '', email: email ?? '', firstName: customer.firstName, lastName: customer.lastName };
 }
 
 export async function POST(request: NextRequest) {
@@ -30,19 +27,11 @@ export async function POST(request: NextRequest) {
 	try {
 		const body = await request.json();
 		const { slot, numberOfAttendees, addOns, customer, checkoutQuestionAnswers } = body as {
-			slot: {
-				productId: string;
-				fromDate: string;
-				fromTime: string;
-				toDate: string;
-				toTime: string;
-				staffMemberId?: string | null;
-				locationId?: string | null;
-			};
+			slot: AppointmentDateRangeSlot;
 			numberOfAttendees?: number;
-			addOns?: AddOnSelection[];
-			customer?: CustomerInput;
-			checkoutQuestionAnswers?: QuestionAnswerInput[];
+			addOns?: CreateAppointmentAddOn[];
+			customer?: ExistingOrderCustomer | NewOrderCustomer;
+			checkoutQuestionAnswers?: CheckoutQuestionAnswer[];
 		};
 
 		if (!slot?.productId || !slot?.fromDate || !slot?.fromTime || !slot?.toDate || !slot?.toTime) {
@@ -76,14 +65,7 @@ export async function POST(request: NextRequest) {
 						addOnId: a.addOnId,
 						...(typeof a.quantity === 'number' ? { quantity: a.quantity } : {}),
 					})),
-				...(customer
-				? {
-						customer:
-							customer.kind === 'existing' && customer.customerId
-								? { customerId: customer.customerId }
-								: { externalId: customer.email ?? '', email: customer.email ?? '', firstName: customer.firstName, lastName: customer.lastName },
-					}
-				: {}),
+				...(customer ? { customer: toAppointmentCustomer(customer) } : {}),
 				...(checkoutQuestionAnswers && checkoutQuestionAnswers.length > 0
 					? { checkoutQuestionAnswers }
 					: {}),

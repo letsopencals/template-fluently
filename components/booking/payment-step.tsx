@@ -6,11 +6,11 @@ import { Button } from '@/components/ui/button';
 
 interface PaymentStepProps {
 	providers: CustomerProviderCatalogItem[];
-	provider: string | null;
+	provider: CustomerProviderCatalogItem['name'] | null;
 	paymentData: CheckoutStartResponse | null;
 	submitting: boolean;
 	isExpired: boolean;
-	onSelectProvider: (providerName: string) => void;
+	onSelectProvider: (providerName: CustomerProviderCatalogItem['name']) => void;
 	onStripeSuccess: (paymentIntentId: string) => void;
 	onStripeError: (message: string) => void;
 	/** Confirm a booking paid outside the site (cash, bank transfer, invoice) or with nothing to pay. */
@@ -18,7 +18,7 @@ interface PaymentStepProps {
 }
 
 /** Heading and line for a method that takes no card here. Never promises "pay at the school" for a transfer. */
-function manualCopy(name: string | null, displayName: string | undefined): { title: string; body: string } {
+function manualCopy(name: CustomerProviderCatalogItem['name'] | null, displayName: string | undefined): { title: string; body: string } {
 	switch (name) {
 		case 'no_payment_required':
 			return { title: 'No payment needed', body: 'Your lesson is fully covered. Confirm to finish booking.' };
@@ -47,7 +47,7 @@ export function PaymentStep({
 	// Branch on the method's checkout mode, not its name. When nothing is collectible the backend
 	// answers start with "no payment required" whatever was picked, so the response wins.
 	const chosen = providers.find((p) => p.name === provider);
-	const noPayment = (paymentData?.provider as string) === 'no_payment_required';
+	const noPayment = paymentData?.provider === 'no_payment_required';
 	const mode = noPayment ? 'none' : chosen?.checkoutMode;
 	const showStripe = mode === 'internal' && paymentData?.clientSecret;
 	// Manual methods confirm straight after start; this panel shows while that runs and offers a retry if it failed.

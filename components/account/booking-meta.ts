@@ -1,3 +1,4 @@
+import type { AppointmentDetailResponse, AppointmentListItemResponse, OrderDetailAppointment } from '@opencals/storefront-sdk';
 import { siteConfig } from '@/lib/site-config';
 
 /**
@@ -10,42 +11,13 @@ import { siteConfig } from '@/lib/site-config';
  * the dashboard.
  */
 
-interface AddressFields {
-	addressLine1?: string | null;
-	addressLine2?: string | null;
-	city?: string | null;
-	state?: string | null;
-	postalCode?: string | null;
-	country?: string | null;
-	displayAddress?: string | null;
-}
+type AppointmentFields = 'from' | 'to' | 'numberOfAttendees' | 'staffMember' | 'product' | 'location';
 
-/** Structural subset shared by the SDK's appointment list, detail and order shapes. */
-export interface AppointmentLike {
-	from: string;
-	to: string;
-	numberOfAttendees?: number | null;
-	staffMember?: {
-		firstName?: string | null;
-		lastName?: string | null;
-		slug?: string | null;
-		image?: { url?: string | null } | null;
-	} | null;
-	product?: {
-		title?: string | null;
-		variantTitle?: string | null;
-		slug?: string | null;
-		color?: string | null;
-		maxAttendees?: number | null;
-		price?: number | null;
-	} | null;
-	location?: (AddressFields & {
-		title?: string | null;
-		type?: string | null;
-		link?: string | null;
-		address?: string | null;
-	}) | null;
-}
+/** The SDK's appointment list, detail and order-embedded shapes: the fields every one of them has. */
+export type AppointmentLike =
+	| Pick<AppointmentListItemResponse, AppointmentFields>
+	| Pick<AppointmentDetailResponse, AppointmentFields>
+	| Pick<OrderDetailAppointment, AppointmentFields>;
 
 export interface BookingMeta {
 	title: string;
@@ -67,7 +39,7 @@ export interface BookingMeta {
 	bookAgainHref: string | null;
 }
 
-function joinAddress(a: AddressFields | null | undefined): string | null {
+function joinAddress(a: AppointmentLike['location'] | undefined): string | null {
 	if (!a) return null;
 	if (a.displayAddress) return a.displayAddress;
 	const parts = [a.addressLine1, a.addressLine2, a.city, a.state, a.postalCode].filter(Boolean);

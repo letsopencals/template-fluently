@@ -1,5 +1,6 @@
 import { memo } from 'react';
 import { clsx } from 'clsx';
+import type { StorefrontAppointmentPendingReason } from '@opencals/storefront-sdk';
 
 type Tone = 'accent' | 'positive' | 'neutral' | 'warning' | 'negative';
 
@@ -27,7 +28,7 @@ const PAYMENT: Record<string, { label: string; tone: Tone }> = {
 };
 
 /** Why a pending lesson waits. A pending lesson with no reason is being confirmed right now: show it as booked. */
-const AWAITING: Record<string, { label: string; tone: Tone }> = {
+const AWAITING: Record<StorefrontAppointmentPendingReason, { label: string; tone: Tone }> = {
 	awaiting_payment: { label: 'Awaiting payment', tone: 'warning' },
 	awaiting_approval: { label: 'Awaiting confirmation', tone: 'warning' },
 };
@@ -63,7 +64,7 @@ export const StatusBadge = memo(function StatusBadge({
 	kind: keyof typeof MAPS;
 	status: string;
 	/** Appointments only: `pendingReason` from the API. */
-	pendingReason?: string | null;
+	pendingReason?: StorefrontAppointmentPendingReason | null;
 	className?: string;
 }) {
 	const pending = kind === 'appointment' && status === 'pending';

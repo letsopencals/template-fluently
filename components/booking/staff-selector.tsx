@@ -10,8 +10,7 @@ interface StaffSelectorProps {
 }
 
 function getImageUrl(staff: ProductListVariantStaffMember): string | null {
-	const img = staff.image as { url?: string } | undefined;
-	return img?.url ?? null;
+	return staff.image?.url ?? null;
 }
 
 function getInitials(staff: ProductListVariantStaffMember): string {
